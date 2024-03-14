@@ -97,7 +97,7 @@
 		compatible = "active-semi,act8846";
 		reg = <0x5a>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pmic_vsel>, <&pwr_hold>;
+		pinctrl-0 = <&pmic_vsel>; //, <&pwr_hold>;
 		system-power-controller;
 
 		vp1-supply = <&vcc_sys>;
