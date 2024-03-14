@@ -35,6 +35,14 @@
 };
 
 
+&i2c0 {
+	&act8846 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pmic_vsel>;//, <&pwr_hold>;
+	};
+};
+
+
 // There's no SD card
 // We still need this node as code assumes internal flash is /dev/mmcblk1
 //&sdmmc { status = "disabled"; };

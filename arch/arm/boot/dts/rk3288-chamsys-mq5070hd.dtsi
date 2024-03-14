@@ -137,12 +137,12 @@
 	};
 };
 
-&act8846 {
-	// Shutdown routine causes I2C warning
-	// Anyway, we have our own poweroff system on
-	// MQ50HD/MQ70HD main board via MCU and relay.
-	/delete-property/ system-power-controller;
-};
+// &act8846 {
+// 	// Shutdown routine causes I2C warning
+// 	// Anyway, we have our own poweroff system on
+// 	// MQ50HD/MQ70HD main board via MCU and relay.
+// 	/delete-property/ system-power-controller;
+// };
 
 /* MAC address EEPROM */
 &i2c1 {
