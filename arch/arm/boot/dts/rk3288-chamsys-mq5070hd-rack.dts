@@ -19,7 +19,7 @@
 			gpio-key,wakeup = <1>;
 			gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
 			label = "GPIO Power";
-			linux,code = <116>;
+			linux,code = <0x100>;	// input-event-codes.h: BTN_0
 			pinctrl-names = "default";
 			pinctrl-0 = <&shutdn_key>;
 		};
