@@ -21,14 +21,14 @@
 			label = "GPIO Power";
 			linux,code = <116>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&pwr_key>;
+			pinctrl-0 = <&shutdn_key>;
 		};
 	};
 };
 
 &pinctrl {
     keys {
-	    pwr_key: pwr-key {
+	    shutdn_key: shutdn_key {
 	    	rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
 	    };
     };
