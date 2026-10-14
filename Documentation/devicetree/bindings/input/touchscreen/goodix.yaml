@@ -45,6 +45,13 @@ properties:
   reset-gpios:
     maxItems: 1
 
+  goodix,int-input-only:
+    type: boolean
+    description: The board cannot drive the irq line from the host (for
+      example a level shifter makes it input-only). The driver never
+      configures it as an output, so the I2C address must be strapped by the
+      board, and the controller is not put to sleep on system suspend.
+
   AVDD28-supply:
     description: Analog power supply regulator on AVDD28 pin
 

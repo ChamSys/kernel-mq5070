@@ -1,0 +1,358 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Base device tree file for ChamSys Ltd consoles
+ * based on the RK3288 + MQ50/70 baseboard.
+ */
+
+#include "rk3288-firefly-reload-core.dtsi"
+
+/ {
+	compatible = "firefly,firefly-rk3288-reload", "rockchip,rk3288";
+
+	vcc_5v: vcc_sys: vsys-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	vcc_sd: sdmmc-regulator {
+		compatible = "regulator-fixed";
+		gpio = <&gpio4 RK_PD0 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sdmmc_pwr>;
+		regulator-name = "vcc_sd";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		startup-delay-us = <100000>;
+		vin-supply = <&vcc_io>;
+
+		// The SD card detect pin is pulled high via this
+		// supply, which means when the SD card isn't present
+		// the driver gets in an endless not detect -> power
+		// off -> detect -> power on -> not detect loop.
+		// To fix this, we keep it powered on always.
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	/*
+	 * Not used but this node needs to exist to keep
+	 * &io_domains happy.
+	 */
+	dovdd_1v8: dovdd-1v8-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "dovdd_1v8";
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		brightness-levels = <0 255>;
+		num-interpolated-steps = <255>;
+		default-brightness-level = <170>;
+		pwms = <&pwm1 0 5000000 0>;
+		enable-gpios = <&gpio4 RK_PC5 GPIO_ACTIVE_HIGH>;
+		post-pwm-on-delay-ms = <10>;
+		pwm-off-delay-ms = <10>;
+		power-supply = <&vcc_sys>;
+	};
+
+	panel: panel {
+		compatible = "panasonic,vvx10t025", "simple-panel";
+		status = "okay";
+		power-supply = <&vcc_sys>;
+		backlight = <&backlight>;
+		enable-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+		delay,prepare = <120>;
+
+		ports {
+			panel_in: port {
+				panel_in_edp: endpoint {
+					remote-endpoint = <&edp_out_panel>;
+				};
+			};
+		};
+	};
+
+	sound {
+		status = "okay";
+		compatible = "rockchip,rk3288-chamsys-audio";
+		chamsys,audio-cpu = <&i2s>;
+		chamsys,audio-codec = <&codec>;
+	};
+};
+
+&hdmi {
+	ddc-i2c-bus = <&i2c5>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&hdmi_cec_c0>;
+	status = "okay";
+};
+
+/* Internal LCD */
+&edp {
+	status = "okay";
+	vcc-supply = <&vdd_10>;
+	vccio-supply = <&vcc_18>;
+	force-hpd;
+
+	ports {
+		edp_out: port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			edp_out_panel: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&panel_in_edp>;
+			};
+		};
+	};
+};
+
+&edp_phy {
+	status = "okay";
+};
+
+/* Internal LCD backlight */
+&pwm1 {
+	status = "okay";
+};
+
+&gpu {
+	status = "okay";
+	// This throws an error
+	//mali-supply = <&vdd_gpu>;
+};
+
+&i2c0 {
+	hym8563: hym8563@51 {
+		compatible = "haoyu,hym8563";
+		reg = <0x51>;
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "xin32k";
+	};
+};
+
+&act8846 {
+	// Shutdown routine causes I2C warning
+	// Anyway, we have our own poweroff system on
+	// MQ50HD/MQ70HD main board via MCU and relay.
+	/delete-property/ system-power-controller;
+};
+
+/* MAC address EEPROM */
+&i2c1 {
+	status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
+
+	codec: es8328@10 {
+		status = "okay";
+		compatible = "everest,es8328";
+		DVDD-supply = <&vcca_18>;
+		AVDD-supply = <&vcca_18>;
+		PVDD-supply = <&vcca_18>;
+		HPVDD-supply = <&vcca_18>;
+		clocks = <&cru SCLK_I2S0_OUT>;
+		clock-names = "i2s_clk";
+		reg = <0x10>;
+		#sound-dai-cells = <0>;
+	};
+};
+
+&i2c4 {
+	status = "okay";
+
+	/* Internal touchscreen */
+	panel_touch: gt928@5d {
+		status = "okay";
+		compatible = "goodix,gt928";
+		reg = <0x5d>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&gt928_pins>;
+		interrupt-parent = <&gpio5>;
+		interrupts = <RK_PB0 IRQ_TYPE_EDGE_FALLING>;
+		irq-gpios = <&gpio5 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio5 9 GPIO_ACTIVE_HIGH>;
+		/* Level shifter on INT/RST: INT is input-only on the SoC side */
+		goodix,int-input-only;
+	};
+};
+
+/* HDMI DDC */
+&i2c5 {
+	status = "okay";
+};
+
+&i2s {
+	status = "okay";
+};
+
+&saradc {
+	status = "okay";
+};
+
+/* SD card */
+&sdmmc {
+	status = "ok";
+	// Increase clock to get full 100MB/s read speed
+	max-frequency = <200000000>;
+	bus-width = <4>;
+	// Unable to support UHS-1 rates reliably
+	// SD card is fitted in factory with a Samsung Pro Endurance 32GB
+	cap-sd-highspeed;
+	disable-wp;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc_clk>, <&sdmmc_cmd>, <&sdmmc_cd>, <&sdmmc_bus4>;
+	vmmc-supply = <&vcc_sd>;
+	vqmmc-supply = <&vccio_sd>;
+};
+
+/* eMMC flash storage on Firefly card */
+&emmc {
+	// Squeeze a bit more read performance
+	max-frequency = <200000000>;
+};
+
+/* REG7: Should be VCCA_33 (audio power). */
+&vcca_18 {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};
+
+/* REG8: Should be VCC_LAN. */
+&vcca_33 {
+	regulator-boot-on;
+};
+
+/* REG9: Should be VCC_PMU. */
+&vcc_lan {
+	regulator-always-on;
+};
+
+&vccio_sd {
+	// 1.8V for UHS rates
+	regulator-always-on;
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <3300000>;
+};
+
+&vccio_wl {
+	regulator-always-on;
+};
+
+/* This shares the same pins as the touchscreen. */
+&uart1 {
+  status = "disabled";
+};
+
+/* Debug */
+&uart2 {
+	status = "okay";
+};
+
+/* Comms to power control MCU */
+&uart4 {
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};
+
+/* USB hub (WIFI, external USB ports) */
+&usb_host0_ehci {
+	status = "okay";
+
+	// Force state of wifi wake lines
+	pinctrl-names = "default";
+	pinctrl-0 = <&rtl8821cu_pins>;
+};
+
+/* Front panel */
+&usb_host1 {
+	status = "okay";
+};
+
+/* Top right rear USB port */
+&usb_otg {
+	status = "okay";
+	dr_mode = "host";
+};
+
+&gmac {
+	snps,reset-gpio = <&gpio4 7 0>;
+	pinctrl-0 = <&rgmii_pins>;
+	max-speed = <100>;
+};
+
+&pinctrl {
+	/* SD card */
+	sdmmc {
+		/*
+		 * Default drive strength isn't enough to achieve even
+		 * high-speed mode on firefly board so bump up to 12ma.
+		 */
+		sdmmc_bus4: sdmmc-bus4 {
+			rockchip,pins = <6 RK_PC0 1 &pcfg_pull_up_drv_12ma>,
+					<6 RK_PC1 1 &pcfg_pull_up_drv_12ma>,
+					<6 RK_PC2 1 &pcfg_pull_up_drv_12ma>,
+					<6 RK_PC3 1 &pcfg_pull_up_drv_12ma>;
+		};
+
+		sdmmc_clk: sdmmc-clk {
+			rockchip,pins = <6 RK_PC4 1 &pcfg_pull_none_12ma>;
+		};
+
+		sdmmc_cmd: sdmmc-cmd {
+			rockchip,pins = <6 RK_PC5 1 &pcfg_pull_up_drv_12ma>;
+		};
+
+		sdmmc_pwr: sdmmc-pwr {
+			rockchip,pins = <4 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	/* Internal touchscreen */
+	gt928 {
+		gt928_pins: gt928_pins {
+			rockchip,pins = <5 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>,
+				<5 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	/* Wifi host/chip wake lines */
+	rtl8821cu {
+		rtl8821cu_pins: rtl8821-pins {
+			rockchip,pins =
+				<4 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>, // Host wake WL (out)
+				<4 RK_PD6 RK_FUNC_GPIO &pcfg_pull_none>, // WL wake host (in)
+				<4 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>, // Host wake BT (out)
+				<4 RK_PD7 RK_FUNC_GPIO &pcfg_pull_none>, // BT wake host (in)
+				<4 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>; // WPS (out)
+		};
+	};
+};
+
+/*
+ * USB host0 / OTG tweaks carried over from the 5.6 fork (originally imported
+ * from rockchip-linux into rk3288.dtsi). Kept here as overrides so the shared
+ * upstream rk3288.dtsi stays untouched. Verify on hardware (USB wifi on host0,
+ * USB OTG); if they prove unnecessary on 6.18, delete them.
+ */
+&usb_host0_ehci {
+	reg = <0x0 0xff500000 0x0 0x20000>;
+	clocks = <&cru HCLK_USBHOST0>, <&usbphy1>;
+	clock-names = "usbhost", "utmi";
+};
+
+&usb_otg {
+	g-rx-fifo-size = <280>;
+	g-tx-fifo-size = <256 128 128 64 32 16>;
+	g-use-dma;
+};

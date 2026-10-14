@@ -70,4 +70,8 @@ config LOGO_SUPERH_CLUT224
 	depends on SUPERH
 	default y
 
+config LOGO_CHAMSYS_CLUT224
+	bool "ChamSys 2560x1600 logo"
+	default n
+
 endif # LOGO

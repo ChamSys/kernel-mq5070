@@ -1,0 +1,82 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device tree file for ChamSys Ltd MagicQ Rack.
+ * This is a QuickQ Rack running the MQ5/70 OS.
+ */
+
+/dts-v1/;
+#include "rk3288-chamsys-mq5070hd.dtsi"
+
+/ {
+	model = "ChamSys-RK3288-MQ5070HD-rack";
+
+	keys: gpio-keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		button@0 {
+			gpio-key,wakeup = <1>;
+			gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
+			label = "GPIO Power";
+			linux,code = <116>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pwr_key>;
+		};
+	};
+};
+
+&pinctrl {
+    keys {
+	    pwr_key: pwr-key {
+	    	rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
+	    };
+    };
+};
+
+
+// There's no SD card
+// We still need this node as code assumes internal flash is /dev/mmcblk1
+//&sdmmc { status = "disabled"; };
+
+// No internal touchscreen
+&backlight { status = "disabled"; };
+&pwm1 { status = "disabled"; };
+&panel { status = "disabled"; };
+&panel_touch { status = "disabled"; };
+&edp { status = "disabled"; };
+&edp_phy { status = "disabled"; };
+
+// No wifi control pins
+&usb_host0_ehci {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+};
+/delete-node/ &rtl8821cu_pins;
+
+// No network switch, full 1Gbps
+&gmac {
+	max-speed = <1000>;
+};
+
+// UART0 is DMX Port 1
+&uart0 { status = "okay"; };
+
+// UART1 is DMX Port 2
+&uart1 { status = "okay"; };
+
+// UART2 is comms to 10Scene (and also debug serial)
+&uart2 { status = "okay"; };
+
+// UART3 is DMX Port 3 (not currenly used)
+&uart3 { status = "okay"; };
+
+// UART4 is MIDI
+&uart4 { status = "okay"; };
+
+&act8846 {
+	// Add back in
+	// Needed in rack but not consoles
+	// to ensure power button works after shutdown
+	system-power-controller;
+};

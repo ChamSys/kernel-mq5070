@@ -706,6 +706,14 @@ static int goodix_pin_acpi_output_method(struct goodix_ts_data *ts, int value)
 
 static int goodix_irq_direction_output(struct goodix_ts_data *ts, int value)
 {
+	/*
+	 * ChamSys Ltd: a level shifter on the INT line of the MQ50HD/MQ70HD
+	 * makes it input-only on the host side. The I2C address is strapped by
+	 * the board, so there is nothing to drive.
+	 */
+	if (ts->int_input_only)
+		return 0;
+
 	switch (ts->irq_pin_access_method) {
 	case IRQ_PIN_ACCESS_NONE:
 		dev_err(&ts->client->dev,
@@ -1025,6 +1033,8 @@ retry_get_irq_gpio:
 			ts->irq_pin_access_method = IRQ_PIN_ACCESS_GPIO;
 		}
 	}
+
+	ts->int_input_only = device_property_read_bool(dev, "goodix,int-input-only");
 
 	return 0;
 }
@@ -1435,7 +1445,8 @@ static int goodix_suspend(struct device *dev)
 		wait_for_completion(&ts->firmware_loading_complete);
 
 	/* We need gpio pins to suspend/resume */
-	if (ts->irq_pin_access_method == IRQ_PIN_ACCESS_NONE) {
+	if (ts->irq_pin_access_method == IRQ_PIN_ACCESS_NONE ||
+	    ts->int_input_only) {
 		goodix_disable_irq(ts);
 		return 0;
 	}
@@ -1479,7 +1490,8 @@ static int goodix_resume(struct device *dev)
 	u8 config_ver;
 	int error;
 
-	if (ts->irq_pin_access_method == IRQ_PIN_ACCESS_NONE) {
+	if (ts->irq_pin_access_method == IRQ_PIN_ACCESS_NONE ||
+	    ts->int_input_only) {
 		goodix_enable_irq(ts);
 		return 0;
 	}

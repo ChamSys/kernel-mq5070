@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device tree file for ChamSys Ltd MQ50HD and MQ70HD
+ * with new Bestar internal screen.
+ */
+
+/dts-v1/;
+#include "rk3288-chamsys-mq5070hd.dtsi"
+
+/ {
+	model = "ChamSys-RK3288-MQ5070HD-bestar2";
+};
+
+&backlight {
+	// PWM = 200Hz, higher frequencies create audible whine
+	pwms = <&pwm1 0 5000000 0>;
+};
+
+&panel {
+	compatible = "bestar,bsd101wum-n80B";
+};
+
+&panel_touch {
+	touchscreen-inverted-x = <1>;
+	touchscreen-inverted-y = <1>;
+};

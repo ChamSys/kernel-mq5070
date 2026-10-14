@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device tree file for ChamSys Ltd MQ50HD and MQ70HD
+ * with BOE GV101WUM-N40-1MT0 Screen.
+ */
+
+/dts-v1/;
+#include "rk3288-chamsys-mq5070hd.dtsi"
+
+/ {
+	model = "ChamSys-RK3288-MQ5070HD-boegv101";
+};
+
+&backlight {
+	// PWM = 200Hz, higher frequencies create audible whine
+	pwms = <&pwm1 0 5000000 0>;
+};
+
+&panel {
+	compatible = "boe,gv101", "simple-panel";
+};
+
+&panel_touch {
+	touchscreen-inverted-x = <1>;
+	touchscreen-inverted-y = <1>;
+};

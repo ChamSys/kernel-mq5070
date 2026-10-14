@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device tree file for ChamSys Ltd MQ50HD and MQ70HD
+ * with original Panasonic 2K internal screen.
+
+ * This gets renamed to rk3288-chamsys-mq5070hd.dtb
+ * as there was originally no dtsi file.
+ */
+
+/dts-v1/;
+#include "rk3288-chamsys-mq5070hd.dtsi"
+
+/ {
+	model = "ChamSys-RK3288-MQ5070HD-panasonic1";
+};

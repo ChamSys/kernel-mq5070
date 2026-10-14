@@ -96,17 +96,13 @@ static int analogix_dp_detect_hpd(struct analogix_dp_device *dp)
 
 static bool analogix_dp_detect_sink_psr(struct analogix_dp_device *dp)
 {
-	unsigned char psr_version;
-	int ret;
-
-	ret = drm_dp_dpcd_readb(&dp->aux, DP_PSR_SUPPORT, &psr_version);
-	if (ret != 1) {
-		dev_err(dp->dev, "failed to get PSR version, disable it\n");
-		return false;
-	}
-
-	dev_dbg(dp->dev, "Panel PSR version : %x\n", psr_version);
-	return psr_version & DP_PSR_IS_SUPPORTED;
+	/*
+	 * ChamSys Ltd:
+	 * Using PSR doesn't work reliably on the Panasonic LCDs used
+	 * in MQ50HD/MQ70HD. The screen goes blank after a second when
+	 * the image isn't changing.
+	 */
+	return false;
 }
 
 static int analogix_dp_enable_sink_psr(struct analogix_dp_device *dp)
@@ -235,7 +231,10 @@ static int analogix_dp_link_start(struct analogix_dp_device *dp)
 	dp->link_train.eq_loop = 0;
 
 	for (lane = 0; lane < lane_count; lane++)
+	{
 		dp->link_train.cr_loop[lane] = 0;
+		dp->link_train.cr_req_cnt[lane] = 0;
+	}
 
 	/* Set link rate and count as you want to establish*/
 	analogix_dp_set_link_bandwidth(dp, dp->link_train.link_rate);
@@ -424,18 +423,32 @@ static int analogix_dp_process_clock_recovery(struct analogix_dp_device *dp)
 		voltage_swing = analogix_dp_get_adjust_request_voltage(adjust_request, lane);
 		pre_emphasis = analogix_dp_get_adjust_request_pre_emphasis(adjust_request, lane);
 
+		/*
+		 * ChamSys Ltd: The MQ50HD/MQ70HD panels need many more link
+		 * training requests than the stock limit before giving up, and
+		 * must not bail out at maximum swing/pre-emphasis. Count
+		 * repeated identical requests (cr_loop) separately from the
+		 * number of changed requests (cr_req_cnt).
+		 */
 		if (DPCD_VOLTAGE_SWING_GET(training_lane) == voltage_swing &&
-		    DPCD_PRE_EMPHASIS_GET(training_lane) == pre_emphasis)
+		    DPCD_PRE_EMPHASIS_GET(training_lane) == pre_emphasis) {
 			dp->link_train.cr_loop[lane]++;
 
-		if (dp->link_train.cr_loop[lane] == MAX_CR_LOOP ||
-		    voltage_swing == VOLTAGE_LEVEL_3 ||
-		    pre_emphasis == PRE_EMPHASIS_LEVEL_3) {
-			dev_err(dp->dev, "CR Max reached (%d,%d,%d)\n",
-				dp->link_train.cr_loop[lane],
-				voltage_swing, pre_emphasis);
-			analogix_dp_reduce_link_rate(dp);
-			return -EIO;
+			if (dp->link_train.cr_loop[lane] == MAX_CR_LOOP) {
+				dev_err(dp->dev, "CR LT REQ ENDED: Lane %d: State(%d,%d)\n",
+					lane, voltage_swing, pre_emphasis);
+				analogix_dp_reduce_link_rate(dp);
+				return -EIO;
+			}
+		} else {
+			dp->link_train.cr_req_cnt[lane]++;
+			dp->link_train.cr_loop[lane] = 0;
+
+			if (dp->link_train.cr_req_cnt[lane] == MAX_CR_REQUEST) {
+				dev_err(dp->dev, "CR LT REQ MAX: Lane %d\n", lane);
+				analogix_dp_reduce_link_rate(dp);
+				return -EIO;
+			}
 		}
 	}
 
@@ -534,6 +547,7 @@ static void analogix_dp_get_max_rx_bandwidth(struct analogix_dp_device *dp,
 	 * 0x06 = 1.62 Gbps, 0x0a = 2.7 Gbps, 0x14 = 5.4Gbps
 	 */
 	drm_dp_dpcd_readb(&dp->aux, DP_MAX_LINK_RATE, &data);
+	dev_info(dp->dev, "Max link rate byte: 0x%02x\n",data);
 	*bandwidth = data;
 }
 
