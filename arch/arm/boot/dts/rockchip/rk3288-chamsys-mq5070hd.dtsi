@@ -39,12 +39,14 @@
 	};
 
 	/*
-	 * Not used but this node needs to exist to keep
-	 * &io_domains happy.
+	 * Not used but this node needs to exist, with a voltage, to keep
+	 * &io_domains happy (it won't probe if it can't read the voltage).
 	 */
 	dovdd_1v8: dovdd-1v8-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "dovdd_1v8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
 	};
 
 	backlight: backlight {

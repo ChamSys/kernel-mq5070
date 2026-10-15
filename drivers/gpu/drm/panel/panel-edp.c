@@ -1622,6 +1622,120 @@ static const struct panel_desc sharp_lq123p1jx31 = {
 	},
 };
 
+/*
+ * ChamSys Ltd: internal eDP screens of the MQ50HD/MQ70HD. All are fixed-timing
+ * panels (the Bestar/BOE ones sit behind an eDP to LVDS bridge board that
+ * doesn't expose an EDID), so they can't use the generic "edp-panel".
+ */
+
+/* Original panel; works for the first 2 displays used in the MQ5070 */
+static const struct drm_display_mode panasonic_vvx10t025_mode = {
+	.clock = 286272,
+	.hdisplay = 2560,
+	.hsync_start = 2560 + 88,
+	.hsync_end = 2560 + 88 + 32,
+	.htotal = 2560 + 88 + 32 + 120,
+	.vdisplay = 1600,
+	.vsync_start = 1600 + 28,
+	.vsync_end = 1600 + 28 + 5,
+	.vtotal = 1600 + 28 + 5 + 71,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc panasonic_vvx10t025 = {
+	.modes = &panasonic_vvx10t025_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 129,
+		.height = 171,
+	},
+};
+
+/* BESTAR BSD101WUM-N80 with eDP to LVDS adaptor */
+static const struct drm_display_mode bestar_bsd101wum_n80_mode = {
+	.clock = 155120,			/* 77.56 x 2 x 1000 */
+	.hdisplay = 1920,			/* 960 x 2 */
+	.hsync_start = 1920 + 52,		/* front porch = 26 x 2 */
+	.hsync_end = 1920 + 52 + 12,		/* sync = 12 x 2 */
+	.htotal = 1920 + 52 + 12 + 32,		/* back porch = 16 x 2 */
+	.vdisplay = 1200,
+	.vsync_start = 1200 + 8,
+	.vsync_end = 1200 + 8 + 3,
+	.vtotal = 1200 + 8 + 3 + 24,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc bestar_bsd101wum_n80 = {
+	.modes = &bestar_bsd101wum_n80_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 220,
+		.height = 138,
+	},
+	.delay = {
+		/* Fixed settle time after power-on (HPD isn't wired up) */
+		.hpd_reliable = 120,
+	},
+};
+
+/* BESTAR BSD101WUM-N80B (second revision) with eDP to LVDS adaptor */
+static const struct drm_display_mode bestar_bsd101wum_n80B_mode = {
+	.clock = 149000,
+	.hdisplay = 1920,
+	.hsync_start = 1920 + 80,
+	.hsync_end = 1920 + 80 + 40,
+	.htotal = 1920 + 80 + 40 + 40,
+	.vdisplay = 1200,
+	.vsync_start = 1200 + 20,
+	.vsync_end = 1200 + 20 + 10,
+	.vtotal = 1200 + 20 + 10 + 10,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc bestar_bsd101wum_n80B = {
+	.modes = &bestar_bsd101wum_n80B_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 220,
+		.height = 138,
+	},
+	.delay = {
+		/* Fixed settle time after power-on (HPD isn't wired up) */
+		.hpd_reliable = 120,
+	},
+};
+
+/* BOE GV101WUM-N40-1MT0 */
+static const struct drm_display_mode boe_gv101wum_n40_1mt0_mode = {
+	.clock = 154800,
+	.hdisplay = 1920,
+	.hsync_start = 1920 + 100,
+	.hsync_end = 1920 + 100 + 32,
+	.htotal = 1920 + 100 + 32 + 60,
+	.vdisplay = 1200,
+	.vsync_start = 1200 + 30,
+	.vsync_end = 1200 + 30 + 3,
+	.vtotal = 1200 + 30 + 3 + 10,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc boe_gv101wum_n40_1mt0 = {
+	.modes = &boe_gv101wum_n40_1mt0_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 220,
+		.height = 138,
+	},
+	.delay = {
+		/* Fixed settle time after power-on (HPD isn't wired up) */
+		.hpd_reliable = 120,
+	},
+};
+
 static const struct of_device_id platform_of_match[] = {
 	{
 		/* Must be first */
@@ -1655,6 +1769,15 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "auo,b133xtn01",
 		.data = &auo_b133xtn01,
+	}, {
+		.compatible = "bestar,bsd101wum-n80",
+		.data = &bestar_bsd101wum_n80,
+	}, {
+		.compatible = "bestar,bsd101wum-n80B",
+		.data = &bestar_bsd101wum_n80B,
+	}, {
+		.compatible = "boe,gv101",
+		.data = &boe_gv101wum_n40_1mt0,
 	}, {
 		.compatible = "boe,nv101wxmn51",
 		.data = &boe_nv101wxmn51,
@@ -1700,6 +1823,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "neweast,wjfh116008a",
 		.data = &neweast_wjfh116008a,
+	}, {
+		.compatible = "panasonic,vvx10t025",
+		.data = &panasonic_vvx10t025,
 	}, {
 		.compatible = "samsung,lsn122dl01-c01",
 		.data = &samsung_lsn122dl01_c01,
