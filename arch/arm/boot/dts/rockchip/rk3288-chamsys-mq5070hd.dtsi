@@ -122,10 +122,18 @@
 	status = "okay";
 };
 
+/*
+ * Let panfrost's devfreq scale the SYR828 GPU rail with the OPP table.
+ * Without mali-supply the rail stays at its boot voltage while the clock
+ * goes up to 600MHz (1.25V in the OPP table), which glitches the GPU.
+ */
 &gpu {
 	status = "okay";
-	// This throws an error
-	//mali-supply = <&vdd_gpu>;
+	mali-supply = <&vdd_gpu>;
+};
+
+&vdd_gpu {
+	regulator-ramp-delay = <6000>;
 };
 
 &i2c0 {
